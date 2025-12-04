@@ -1,0 +1,1752 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EJ RHAI - Plataforma de Recrutamento e RH</title>
+    
+    <!-- 
+        GOOGLE DRIVE INTEGRATION
+        Para usar um link real do Google Drive, substitua a URL abaixo:
+        Procure por: const GOOGLE_DRIVE_URL = 
+        E altere para o link da sua pasta compartilhada do Google Drive
+        Exemplo: https://drive.google.com/drive/folders/SEU_ID_AQUI
+    -->
+    
+    <style>
+        /* =====================================================================
+           CSS VARIABLES - PALETA DE CORES
+           ===================================================================== */
+        :root {
+            --black: #000000;
+            --white: #FFFFFF;
+            --gray-100: #f4f4f4;
+            --gray-500: #7a7a7a;
+            --gray-800: #2b2b2b;
+            --dark-green: #0b3d2e;
+            
+            /* Derived colors */
+            --bg-primary: var(--white);
+            --text-primary: var(--black);
+            --text-secondary: var(--gray-500);
+            --border-color: #e0e0e0;
+            --shadow-light: 0 2px 8px rgba(0, 0, 0, 0.08);
+            --shadow-medium: 0 4px 16px rgba(0, 0, 0, 0.12);
+        }
+
+        /* =====================================================================
+           RESET E ESTILOS GLOBAIS
+           ===================================================================== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        body {
+            overflow-x: hidden;
+        }
+
+        /* =====================================================================
+           LAYOUT PRINCIPAL
+           ===================================================================== */
+        #app {
+            width: 100%;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            width: 100%;
+        }
+
+        /* =====================================================================
+           BOTÃO FLUTUANTE (HAMBURGER MENU)
+           ===================================================================== */
+        .floating-menu-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 56px;
+            height: 56px;
+            background-color: var(--dark-green);
+            color: var(--white);
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            box-shadow: var(--shadow-medium);
+            transition: all 0.3s ease;
+            z-index: 999;
+        }
+
+        .floating-menu-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(11, 61, 46, 0.3);
+        }
+
+        .floating-menu-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* =====================================================================
+           MENU LATERAL (HAMBURGER)
+           ===================================================================== */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 280px;
+            height: 100vh;
+            background-color: var(--gray-800);
+            color: var(--white);
+            padding: 30px 0;
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+            z-index: 998;
+            overflow-y: auto;
+            box-shadow: var(--shadow-medium);
+        }
+
+        .sidebar.open {
+            transform: translateX(0);
+        }
+
+        .sidebar-header {
+            padding: 0 20px 30px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .sidebar-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--dark-green);
+            margin-bottom: 5px;
+        }
+
+        .sidebar-subtitle {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .sidebar-nav {
+            list-style: none;
+        }
+
+        .sidebar-nav li {
+            margin: 0;
+        }
+
+        .sidebar-nav a {
+            display: block;
+            padding: 15px 20px;
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-left: 3px solid transparent;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .sidebar-nav a:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: var(--white);
+            border-left-color: var(--dark-green);
+            padding-left: 24px;
+        }
+
+        .sidebar-nav a.active {
+            background-color: rgba(11, 61, 46, 0.3);
+            color: var(--white);
+            border-left-color: var(--dark-green);
+        }
+
+        .sidebar-footer {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            background-color: rgba(0, 0, 0, 0.2);
+        }
+
+        .sidebar-footer a {
+            display: block;
+            padding: 10px 0;
+            color: rgba(255, 255, 255, 0.6);
+            text-decoration: none;
+            font-size: 12px;
+            transition: color 0.2s ease;
+        }
+
+        .sidebar-footer a:hover {
+            color: var(--white);
+        }
+
+        /* =====================================================================
+           OVERLAY (quando menu está aberto)
+           ===================================================================== */
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            z-index: 997;
+        }
+
+        .sidebar-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* =====================================================================
+           HEADER / TOPO
+           ===================================================================== */
+        header {
+            background-color: var(--white);
+            border-bottom: 1px solid var(--border-color);
+            padding: 20px 0;
+            box-shadow: var(--shadow-light);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--dark-green);
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .logo span {
+            color: var(--text-primary);
+        }
+
+        .header-info {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        /* =====================================================================
+           MAIN CONTENT
+           ===================================================================== */
+        main {
+            flex: 1;
+            padding: 40px 0;
+        }
+
+        /* =====================================================================
+           TELA INICIAL (HOME)
+           ===================================================================== */
+        .home-view {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 70vh;
+            text-align: center;
+        }
+
+        .home-title {
+            font-size: 48px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: var(--text-primary);
+        }
+
+        .home-subtitle {
+            font-size: 18px;
+            color: var(--text-secondary);
+            margin-bottom: 50px;
+            max-width: 600px;
+        }
+
+        .home-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            max-width: 700px;
+            width: 100%;
+        }
+
+        .card-btn {
+            padding: 40px 30px;
+            background-color: var(--white);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            text-decoration: none;
+            color: var(--text-primary);
+        }
+
+        .card-btn:hover {
+            border-color: var(--dark-green);
+            box-shadow: var(--shadow-medium);
+            transform: translateY(-4px);
+        }
+
+        .card-btn-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .card-btn-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .card-btn-desc {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        /* =====================================================================
+           ÁREA EMPRESA
+           ===================================================================== */
+        .company-view {
+            display: none;
+        }
+
+        .company-view.active {
+            display: block;
+        }
+
+        .company-intro {
+            background-color: var(--gray-100);
+            padding: 40px;
+            border-radius: 12px;
+            margin-bottom: 40px;
+        }
+
+        .company-intro h2 {
+            font-size: 32px;
+            margin-bottom: 20px;
+            color: var(--text-primary);
+        }
+
+        .company-intro p {
+            font-size: 16px;
+            color: var(--text-secondary);
+            line-height: 1.8;
+            margin-bottom: 15px;
+        }
+
+        /* =====================================================================
+           SEÇÃO DE BUSCA
+           ===================================================================== */
+        .search-section {
+            margin-bottom: 40px;
+        }
+
+        .search-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .search-header h3 {
+            font-size: 24px;
+            color: var(--text-primary);
+        }
+
+        .search-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .search-input {
+            flex: 1;
+            min-width: 200px;
+            padding: 12px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.2s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--dark-green);
+            box-shadow: 0 0 0 3px rgba(11, 61, 46, 0.1);
+        }
+
+        .btn {
+            padding: 12px 24px;
+            background-color: var(--dark-green);
+            color: var(--white);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .btn:hover {
+            background-color: #0a2f25;
+            box-shadow: var(--shadow-light);
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn-secondary {
+            background-color: var(--gray-500);
+        }
+
+        .btn-secondary:hover {
+            background-color: #6a6a6a;
+        }
+
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 12px;
+        }
+
+        .filter-toggle {
+            background-color: var(--gray-100);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .filter-toggle:hover {
+            background-color: #e8e8e8;
+        }
+
+        .filter-toggle.active {
+            background-color: var(--dark-green);
+            color: var(--white);
+            border-color: var(--dark-green);
+        }
+
+        /* =====================================================================
+           FILTROS
+           ===================================================================== */
+        .filters-container {
+            background-color: var(--gray-100);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .filters-container.open {
+            display: block;
+        }
+
+        .filter-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .filter-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .filter-group label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+        }
+
+        .filter-group input,
+        .filter-group select {
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .filter-group input:focus,
+        .filter-group select:focus {
+            outline: none;
+            border-color: var(--dark-green);
+        }
+
+        /* =====================================================================
+           GRID DE PERFIS
+           ===================================================================== */
+        .profiles-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .profile-card {
+            background-color: var(--white);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .profile-card:hover {
+            box-shadow: var(--shadow-medium);
+            border-color: var(--dark-green);
+            transform: translateY(-4px);
+        }
+
+        .profile-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background-color: var(--gray-100);
+            margin-bottom: 15px;
+            object-fit: cover;
+        }
+
+        .profile-name {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 5px;
+            color: var(--text-primary);
+        }
+
+        .profile-area {
+            font-size: 12px;
+            color: var(--dark-green);
+            font-weight: 600;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        .profile-meta {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+        }
+
+        .profile-specs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 15px;
+        }
+
+        .spec-tag {
+            background-color: var(--gray-100);
+            color: var(--text-primary);
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .profile-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: auto;
+        }
+
+        .profile-actions button {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .btn-view {
+            background-color: var(--dark-green);
+            color: var(--white);
+        }
+
+        .btn-view:hover {
+            background-color: #0a2f25;
+        }
+
+        .btn-hire {
+            background-color: var(--gray-100);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-hire:hover {
+            background-color: #e8e8e8;
+        }
+
+        /* =====================================================================
+           MODAIS
+           ===================================================================== */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background-color: var(--white);
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 600px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            box-shadow: var(--shadow-medium);
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            color: var(--text-secondary);
+            transition: color 0.2s ease;
+        }
+
+        .modal-close:hover {
+            color: var(--text-primary);
+        }
+
+        .modal-header {
+            margin-bottom: 20px;
+            padding-right: 30px;
+        }
+
+        .modal-header h2 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            color: var(--text-primary);
+        }
+
+        .modal-header p {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .modal-body {
+            margin-bottom: 20px;
+        }
+
+        .profile-detail-avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            margin-bottom: 20px;
+            object-fit: cover;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 14px;
+        }
+
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+
+        .detail-label {
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .detail-value {
+            color: var(--text-primary);
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .modal-footer button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        /* =====================================================================
+           FORMULÁRIOS
+           ===================================================================== */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--dark-green);
+            box-shadow: 0 0 0 3px rgba(11, 61, 46, 0.1);
+        }
+
+        /* =====================================================================
+           SEÇÃO EJ RHAI
+           ===================================================================== */
+        .ejrhai-view {
+            display: none;
+        }
+
+        .ejrhai-view.active {
+            display: block;
+        }
+
+        .ejrhai-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .ejrhai-tab {
+            padding: 12px 20px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            transition: all 0.2s ease;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+        }
+
+        .ejrhai-tab:hover {
+            color: var(--text-primary);
+        }
+
+        .ejrhai-tab.active {
+            color: var(--dark-green);
+            border-bottom-color: var(--dark-green);
+        }
+
+        .ejrhai-content {
+            display: none;
+        }
+
+        .ejrhai-content.active {
+            display: block;
+        }
+
+        /* =====================================================================
+           GRÁFICOS
+           ===================================================================== */
+        .chart-container {
+            background-color: var(--gray-100);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .chart-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: var(--text-primary);
+        }
+
+        canvas {
+            max-width: 100%;
+            height: auto;
+        }
+
+        /* =====================================================================
+           NOTIFICAÇÕES (TOAST)
+           ===================================================================== */
+        .toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .toast {
+            background-color: var(--gray-800);
+            color: var(--white);
+            padding: 16px 20px;
+            border-radius: 8px;
+            box-shadow: var(--shadow-medium);
+            animation: slideIn 0.3s ease;
+            max-width: 350px;
+            font-size: 14px;
+        }
+
+        .toast.success {
+            background-color: var(--dark-green);
+        }
+
+        .toast.error {
+            background-color: #c41c3b;
+        }
+
+        .toast.info {
+            background-color: #0066cc;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* =====================================================================
+           LOADING SPINNER
+           ===================================================================== */
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(11, 61, 46, 0.2);
+            border-top-color: var(--dark-green);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* =====================================================================
+           RESPONSIVO
+           ===================================================================== */
+        @media (max-width: 768px) {
+            .home-title {
+                font-size: 36px;
+            }
+
+            .home-subtitle {
+                font-size: 16px;
+            }
+
+            .home-cards {
+                grid-template-columns: 1fr;
+            }
+
+            .profiles-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .filter-row {
+                grid-template-columns: 1fr;
+            }
+
+            .floating-menu-btn {
+                bottom: 20px;
+                right: 20px;
+                width: 48px;
+                height: 48px;
+                font-size: 20px;
+            }
+
+            .sidebar {
+                width: 250px;
+            }
+
+            .ejrhai-tabs {
+                flex-wrap: wrap;
+            }
+
+            .modal-content {
+                padding: 20px;
+            }
+
+            .toast-container {
+                left: 20px;
+                right: 20px;
+                bottom: 20px;
+            }
+
+            .toast {
+                max-width: none;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 0 15px;
+            }
+
+            .home-title {
+                font-size: 28px;
+            }
+
+            .home-subtitle {
+                font-size: 14px;
+            }
+
+            .card-btn {
+                padding: 30px 20px;
+            }
+
+            .card-btn-icon {
+                font-size: 36px;
+            }
+
+            .card-btn-title {
+                font-size: 18px;
+            }
+
+            .search-bar {
+                flex-direction: column;
+            }
+
+            .search-input {
+                min-width: auto;
+            }
+
+            main {
+                padding: 20px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- HEADER -->
+        <header>
+            <div class="container">
+                <div class="header-content">
+                    <div class="logo" onclick="showHome()">EJ<span>RHAI</span></div>
+                    <div class="header-info" id="headerInfo"></div>
+                </div>
+            </div>
+        </header>
+
+        <!-- MAIN CONTENT -->
+        <main>
+            <div class="container">
+                <!-- HOME VIEW -->
+                <div id="homeView" class="home-view active">
+                    <h1 class="home-title">Bem-vindo ao EJ RHAI</h1>
+                    <p class="home-subtitle">Plataforma de recrutamento e análise de recursos humanos. Escolha sua área de interesse:</p>
+                    <div class="home-cards">
+                        <div class="card-btn" onclick="showCompanyView()">
+                            <div class="card-btn-icon">👥</div>
+                            <div class="card-btn-title">Alunos & Adultos</div>
+                            <div class="card-btn-desc">Encontre talentos e candidatos qualificados</div>
+                        </div>
+                        <div class="card-btn" onclick="showCompanyView()">
+                            <div class="card-btn-icon">🏢</div>
+                            <div class="card-btn-title">Empresas</div>
+                            <div class="card-btn-desc">Gerencie contratações e análises de RH</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- COMPANY VIEW -->
+                <div id="companyView" class="company-view">
+                    <div class="company-intro">
+                        <h2>Bem-vindo à Área de Empresas</h2>
+                        <p><strong>Busca e Contratação:</strong> Encontre candidatos qualificados através de nossa base de dados e filtros avançados. Visualize perfis detalhados e contrate diretamente.</p>
+                        <p><strong>EJ RHAI:</strong> Acesse ferramentas premium de recrutamento semiautomático, análise de desempenho e cálculos de RH.</p>
+                        <p><strong>Valores:</strong> Transparência, qualidade e eficiência no processo de recrutamento.</p>
+                    </div>
+
+                    <!-- BUSCA E CONTRATAÇÃO SECTION -->
+                    <div id="searchSection" class="search-section">
+                        <div class="search-header">
+                            <h3>Busca e Contratação</h3>
+                            <button class="btn btn-secondary btn-small" onclick="toggleFilters()">Filtros</button>
+                        </div>
+
+                        <!-- SEARCH BAR -->
+                        <div class="search-bar">
+                            <input type="text" id="searchQuery" class="search-input" placeholder="Buscar por nome, especialização...">
+                            <button class="btn" onclick="performSearch()">Buscar</button>
+                            <button class="btn btn-secondary" onclick="clearSearch()">Limpar</button>
+                        </div>
+
+                        <!-- FILTERS -->
+                        <div id="filtersContainer" class="filters-container">
+                            <div class="filter-row">
+                                <div class="filter-group">
+                                    <label>Idade Mínima</label>
+                                    <input type="number" id="ageMin" min="18" max="70" placeholder="Ex: 25">
+                                </div>
+                                <div class="filter-group">
+                                    <label>Idade Máxima</label>
+                                    <input type="number" id="ageMax" min="18" max="70" placeholder="Ex: 35">
+                                </div>
+                            </div>
+                            <div class="filter-row">
+                                <div class="filter-group">
+                                    <label>Área</label>
+                                    <select id="areaFilter">
+                                        <option value="">Todas as áreas</option>
+                                        <option value="Desenvolvimento">Desenvolvimento</option>
+                                        <option value="Design">Design</option>
+                                        <option value="Dados">Dados</option>
+                                        <option value="Marketing">Marketing</option>
+                                        <option value="Vendas">Vendas</option>
+                                        <option value="Gestão de Projetos">Gestão de Projetos</option>
+                                        <option value="Recursos Humanos">Recursos Humanos</option>
+                                        <option value="Infraestrutura">Infraestrutura</option>
+                                        <option value="Atendimento ao Cliente">Atendimento ao Cliente</option>
+                                        <option value="Finanças">Finanças</option>
+                                    </select>
+                                </div>
+                                <div class="filter-group">
+                                    <label>Cidade</label>
+                                    <input type="text" id="cityFilter" placeholder="Ex: São Paulo">
+                                </div>
+                            </div>
+                            <div class="filter-row">
+                                <div class="filter-group">
+                                    <label>Escola/Universidade</label>
+                                    <input type="text" id="schoolFilter" placeholder="Ex: USP">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- PROFILES GRID -->
+                        <div id="profilesGrid" class="profiles-grid">
+                            <!-- Profiles will be loaded here -->
+                        </div>
+                    </div>
+
+                    <!-- EJ RHAI SECTION -->
+                    <div id="ejrhaiSection" class="ejrhai-view">
+                        <h3 style="font-size: 24px; margin-bottom: 20px;">EJ RHAI - Ferramentas Premium</h3>
+                        
+                        <div class="ejrhai-tabs">
+                            <button class="ejrhai-tab active" onclick="switchEJRHAITab('recommend')">Recomendações</button>
+                            <button class="ejrhai-tab" onclick="switchEJRHAITab('analytics')">Análise de Funcionários</button>
+                            <button class="ejrhai-tab" onclick="switchEJRHAITab('calculator')">Calculadora</button>
+                        </div>
+
+                        <!-- RECOMMEND TAB -->
+                        <div id="recommendContent" class="ejrhai-content active">
+                            <div class="form-group">
+                                <label>Descreva a Vaga</label>
+                                <textarea id="roleDescription" placeholder="Ex: Desenvolvedor Python senior com experiência em AWS..."></textarea>
+                            </div>
+                            <button class="btn" onclick="getRecommendations()">Obter Recomendações</button>
+                            <div id="recommendResults" style="margin-top: 20px;"></div>
+                        </div>
+
+                        <!-- ANALYTICS TAB -->
+                        <div id="analyticsContent" class="ejrhai-content">
+                            <div class="chart-container">
+                                <div class="chart-title">Desempenho por Área (Hard Skills)</div>
+                                <canvas id="hardSkillsChart" width="400" height="250"></canvas>
+                            </div>
+                            <div class="chart-container">
+                                <div class="chart-title">Desempenho por Área (Soft Skills)</div>
+                                <canvas id="softSkillsChart" width="400" height="250"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- CALCULATOR TAB -->
+                        <div id="calculatorContent" class="ejrhai-content">
+                            <div class="form-group">
+                                <label>Tipo de Cálculo</label>
+                                <select id="calcType">
+                                    <option value="average_hard">Média de Hard Skills</option>
+                                    <option value="average_soft">Média de Soft Skills</option>
+                                </select>
+                            </div>
+                            <button class="btn" onclick="performCalculation()">Calcular</button>
+                            <div id="calcResults" style="margin-top: 20px;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- SIDEBAR / HAMBURGER MENU -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-title">Menu</div>
+            <div class="sidebar-subtitle">EJ RHAI Platform</div>
+        </div>
+        <ul class="sidebar-nav">
+            <li><a onclick="showHome(); toggleSidebar();">Home</a></li>
+            <li><a onclick="showCompanyView(); scrollToSection('searchSection'); toggleSidebar();">Busca e Contratação</a></li>
+            <li><a onclick="showCompanyView(); scrollToSection('ejrhaiSection'); toggleSidebar();">EJ RHAI</a></li>
+            <li><a onclick="openGoogleDrive(); toggleSidebar();">📁 Google Drive</a></li>
+        </ul>
+        <div class="sidebar-footer">
+            <a href="#" onclick="showToast('Versão 1.0.0', 'info'); return false;">Sobre</a>
+        </div>
+    </nav>
+
+    <!-- FLOATING MENU BUTTON -->
+    <button class="floating-menu-btn" id="floatingMenuBtn" onclick="toggleSidebar()">☰</button>
+
+    <!-- PROFILE MODAL -->
+    <div class="modal" id="profileModal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeProfileModal()">×</button>
+            <div class="modal-header">
+                <h2 id="modalProfileName"></h2>
+                <p id="modalProfileArea"></p>
+            </div>
+            <div class="modal-body">
+                <img id="modalProfileAvatar" class="profile-detail-avatar" src="" alt="Avatar">
+                <div id="modalProfileDetails"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="hireFromModal()">Contratar</button>
+                <button class="btn btn-secondary" onclick="closeProfileModal()">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CONTACT MODAL -->
+    <div class="modal" id="contactModal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeContactModal()">×</button>
+            <div class="modal-header">
+                <h2>Entrar em Contato</h2>
+                <p id="contactProfileName"></p>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Seu Nome</label>
+                    <input type="text" id="contactName" placeholder="Seu nome">
+                </div>
+                <div class="form-group">
+                    <label>Sua Empresa</label>
+                    <input type="text" id="contactCompany" placeholder="Nome da empresa">
+                </div>
+                <div class="form-group">
+                    <label>Mensagem</label>
+                    <textarea id="contactMessage" placeholder="Sua mensagem..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="sendContact()">Enviar</button>
+                <button class="btn btn-secondary" onclick="closeContactModal()">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- HIRE MODAL -->
+    <div class="modal" id="hireModal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeHireModal()">×</button>
+            <div class="modal-header">
+                <h2>Confirmar Contratação</h2>
+                <p id="hireProfileName"></p>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Nome da Empresa</label>
+                    <input type="text" id="hireCompanyName" placeholder="Nome da sua empresa">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="confirmHire()">Contratar</button>
+                <button class="btn btn-secondary" onclick="closeHireModal()">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST CONTAINER -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+        // =====================================================================
+        // CONFIGURAÇÕES E CONSTANTES
+        // =====================================================================
+        const API_BASE = 'http://127.0.0.1:5000';
+        const GOOGLE_DRIVE_URL = 'https://drive.google.com/drive'; // Substitua com seu link real
+
+        // =====================================================================
+        // ESTADO GLOBAL
+        // =====================================================================
+        let currentView = 'home';
+        let allProfiles = [];
+        let currentProfile = null;
+        let currentProfileForHire = null;
+
+        // =====================================================================
+        // INICIALIZAÇÃO
+        // =====================================================================
+        document.addEventListener('DOMContentLoaded', () => {
+            loadProfiles();
+            setupEventListeners();
+            updateHeaderInfo();
+        });
+
+        function setupEventListeners() {
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    closeProfileModal();
+                    closeContactModal();
+                    closeHireModal();
+                    closeSidebar();
+                }
+            });
+        }
+
+        // =====================================================================
+        // NAVEGAÇÃO
+        // =====================================================================
+        function showHome() {
+            currentView = 'home';
+            document.getElementById('homeView').classList.add('active');
+            document.getElementById('companyView').classList.remove('active');
+            window.scrollTo(0, 0);
+        }
+
+        function showCompanyView() {
+            currentView = 'company';
+            document.getElementById('homeView').classList.remove('active');
+            document.getElementById('companyView').classList.add('active');
+            document.getElementById('ejrhaiSection').classList.remove('active');
+            document.getElementById('searchSection').style.display = 'block';
+            window.scrollTo(0, 0);
+        }
+
+        function scrollToSection(sectionId) {
+            const section = document.getElementById(sectionId);
+            if (section) {
+                setTimeout(() => {
+                    section.scrollIntoView({ behavior: 'smooth' });
+                }, 100);
+            }
+        }
+
+        // =====================================================================
+        // MENU LATERAL
+        // =====================================================================
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('active');
+        }
+
+        function closeSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            sidebar.classList.remove('open');
+            overlay.classList.remove('active');
+        }
+
+        // =====================================================================
+        // CARREGAMENTO DE PERFIS
+        // =====================================================================
+        async function loadProfiles() {
+            try {
+                const response = await fetch(`${API_BASE}/api/profiles`);
+                if (!response.ok) throw new Error('Erro ao carregar perfis');
+                allProfiles = await response.json();
+                displayProfiles(allProfiles);
+            } catch (error) {
+                console.error('Erro:', error);
+                showToast('Erro ao carregar perfis. Verifique se o servidor está rodando.', 'error');
+            }
+        }
+
+        function displayProfiles(profiles) {
+            const grid = document.getElementById('profilesGrid');
+            grid.innerHTML = '';
+
+            if (profiles.length === 0) {
+                grid.innerHTML = '<p style="grid-column: 1 / -1; text-align: center; color: var(--text-secondary);">Nenhum perfil encontrado.</p>';
+                return;
+            }
+
+            profiles.forEach(profile => {
+                const card = document.createElement('div');
+                card.className = 'profile-card';
+                card.innerHTML = `
+                    <img src="${profile.avatar}" alt="${profile.name}" class="profile-avatar">
+                    <div class="profile-name">${profile.name}</div>
+                    <div class="profile-area">${profile.area}</div>
+                    <div class="profile-meta">${profile.age} anos • ${profile.city}</div>
+                    <div class="profile-specs">
+                        ${profile.specializations.slice(0, 3).map(spec => `<span class="spec-tag">${spec}</span>`).join('')}
+                    </div>
+                    <div class="profile-actions">
+                        <button class="btn-view" onclick="openProfileModal(${profile.id})">Ver Perfil</button>
+                        <button class="btn-hire" onclick="openHireModal(${profile.id})">Contratar</button>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        // =====================================================================
+        // BUSCA E FILTROS
+        // =====================================================================
+        function toggleFilters() {
+            const container = document.getElementById('filtersContainer');
+            container.classList.toggle('open');
+        }
+
+        async function performSearch() {
+            const query = document.getElementById('searchQuery').value;
+            const ageMin = document.getElementById('ageMin').value;
+            const ageMax = document.getElementById('ageMax').value;
+            const area = document.getElementById('areaFilter').value;
+            const city = document.getElementById('cityFilter').value;
+            const school = document.getElementById('schoolFilter').value;
+
+            const filters = {
+                q: query,
+                age_min: ageMin ? parseInt(ageMin) : undefined,
+                age_max: ageMax ? parseInt(ageMax) : undefined,
+                area: area || undefined,
+                city: city || undefined,
+                school: school || undefined
+            };
+
+            // Remove undefined values
+            Object.keys(filters).forEach(key => filters[key] === undefined && delete filters[key]);
+
+            try {
+                const response = await fetch(`${API_BASE}/api/search`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(filters)
+                });
+                if (!response.ok) throw new Error('Erro na busca');
+                const results = await response.json();
+                displayProfiles(results);
+                showToast(`${results.length} perfil(is) encontrado(s)`, 'info');
+            } catch (error) {
+                console.error('Erro:', error);
+                showToast('Erro ao buscar perfis', 'error');
+            }
+        }
+
+        function clearSearch() {
+            document.getElementById('searchQuery').value = '';
+            document.getElementById('ageMin').value = '';
+            document.getElementById('ageMax').value = '';
+            document.getElementById('areaFilter').value = '';
+            document.getElementById('cityFilter').value = '';
+            document.getElementById('schoolFilter').value = '';
+            displayProfiles(allProfiles);
+            showToast('Filtros limpos', 'info');
+        }
+
+        // =====================================================================
+        // MODAIS - PERFIL
+        // =====================================================================
+        async function openProfileModal(profileId) {
+            try {
+                const response = await fetch(`${API_BASE}/api/profile/${profileId}`);
+                if (!response.ok) throw new Error('Erro ao carregar perfil');
+                currentProfile = await response.json();
+
+                document.getElementById('modalProfileName').textContent = currentProfile.name;
+                document.getElementById('modalProfileArea').textContent = currentProfile.area;
+                document.getElementById('modalProfileAvatar').src = currentProfile.avatar;
+
+                const detailsHtml = `
+                    <div class="detail-row">
+                        <span class="detail-label">Idade:</span>
+                        <span class="detail-value">${currentProfile.age} anos</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Cidade:</span>
+                        <span class="detail-value">${currentProfile.city}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Escola:</span>
+                        <span class="detail-value">${currentProfile.school}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Especialidades:</span>
+                        <span class="detail-value">${currentProfile.specializations.join(', ')}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Bio:</span>
+                        <span class="detail-value">${currentProfile.bio}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Disponível:</span>
+                        <span class="detail-value">${currentProfile.available ? 'Sim' : 'Não'}</span>
+                    </div>
+                `;
+                document.getElementById('modalProfileDetails').innerHTML = detailsHtml;
+                document.getElementById('profileModal').classList.add('active');
+            } catch (error) {
+                console.error('Erro:', error);
+                showToast('Erro ao carregar perfil', 'error');
+            }
+        }
+
+        function closeProfileModal() {
+            document.getElementById('profileModal').classList.remove('active');
+            currentProfile = null;
+        }
+
+        // =====================================================================
+        // MODAIS - CONTRATAÇÃO
+        // =====================================================================
+        function openHireModal(profileId) {
+            const profile = allProfiles.find(p => p.id === profileId);
+            if (!profile) return;
+
+            currentProfileForHire = profile;
+            document.getElementById('hireProfileName').textContent = profile.name;
+            document.getElementById('hireCompanyName').value = '';
+            document.getElementById('hireModal').classList.add('active');
+        }
+
+        function closeHireModal() {
+            document.getElementById('hireModal').classList.remove('active');
+            currentProfileForHire = null;
+        }
+
+        async function confirmHire() {
+            if (!currentProfileForHire) return;
+
+            const companyName = document.getElementById('hireCompanyName').value.trim();
+            if (!companyName) {
+                showToast('Por favor, insira o nome da empresa', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/api/hire`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        profile_id: currentProfileForHire.id,
+                        company_name: companyName
+                    })
+                });
+                if (!response.ok) throw new Error('Erro ao contratar');
+                const result = await response.json();
+                showToast(result.message, 'success');
+                closeHireModal();
+            } catch (error) {
+                console.error('Erro:', error);
+                showToast('Erro ao processar contratação', 'error');
+            }
+        }
+
+        function hireFromModal() {
+            if (!currentProfile) return;
+            currentProfileForHire = currentProfile;
+            document.getElementById('hireProfileName').textContent = currentProfile.name;
+            document.getElementById('hireCompanyName').value = '';
+            document.getElementById('hireModal').classList.add('active');
+        }
+
+        // =====================================================================
+        // EJ RHAI - RECOMENDAÇÕES
+        // =====================================================================
+        async function getRecommendations() {
+            const roleDescription = document.getElementById('roleDescription').value.trim();
+            if (!roleDescription) {
+                showToast('Por favor, descreva a vaga', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/api/ejrhai/recommend`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ role_description: roleDescription })
+                });
+                if (!response.ok) throw new Error('Erro ao obter recomendações');
+                const result = await response.json();
+
+                let html = '<h4 style="margin-bottom: 15px;">Candidatos Recomendados:</h4>';
+                html += '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px;">';
+                result.recommendations.forEach(rec => {
+                    html += `
+                        <div style="border: 1px solid var(--border-color); padding: 15px; border-radius: 8px;">
+                            <strong>${rec.name}</strong><br>
+                            <small>${rec.area}</small><br>
+                            <small>${rec.city}</small><br>
+                            <button class="btn btn-small" style="margin-top: 10px; width: 100%;" onclick="openHireModal(${rec.id})">Contratar</button>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                document.getElementById('recommendResults').innerHTML = html;
+                showToast('Recomendações obtidas com sucesso', 'success');
+            } catch (error) {
+                console.error('Erro:', error);
+                showToast('Erro ao obter recomendações', 'error');
+            }
+        }
+
+        // =====================================================================
+        // EJ RHAI - ANÁLISES
+        // =====================================================================
+        function switchEJRHAITab(tab) {
+            // Hide all content
+            document.querySelectorAll('.ejrhai-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.ejrhai-tab').forEach(el => el.classList.remove('active'));
+
+            // Show selected tab
+            document.getElementById(tab + 'Content').classList.add('active');
+            event.target.classList.add('active');
+
+            // Draw charts if analytics tab
+            if (tab === 'analytics') {
+                setTimeout(() => {
+                    drawHardSkillsChart();
+                    drawSoftSkillsChart();
+                }, 100);
+            }
+        }
+
+        async function drawHardSkillsChart() {
+            try {
+                const response = await fetch(`${API_BASE}/api/ejrhai/analytics`);
+                if (!response.ok) throw new Error('Erro ao carregar analytics');
+                const data = await response.json();
+
+                const canvas = document.getElementById('hardSkillsChart');
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                const areas = Object.keys(data.performance_by_area);
+                const scores = areas.map(area => data.performance_by_area[area].hard_skills);
+
+                drawBarChart(ctx, areas, scores, 'Hard Skills', '#0b3d2e', canvas.width, canvas.height);
+            } catch (error) {
+                console.error('Erro:', error);
+            }
+        }
+
+        async function drawSoftSkillsChart() {
+            try {
+                const response = await fetch(`${API_BASE}/api/ejrhai/analytics`);
+                if (!response.ok) throw new Error('Erro ao carregar analytics');
+                const data = await response.json();
+
+                const canvas = document.getElementById('softSkillsChart');
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                const areas = Object.keys(data.performance_by_area);
+                const scores = areas.map(area => data.performance_by_area[area].soft_skills);
+
+                drawBarChart(ctx, areas, scores, 'Soft Skills', '#7a7a7a', canvas.width, canvas.height);
+            } catch (error) {
+                console.error('Erro:', error);
+            }
+        }
+
+        function drawBarChart(ctx, labels, data, title, color, width, height) {
+            const padding = 40;
+            const chartWidth = width - padding * 2;
+            const chartHeight = height - padding * 2;
+            const barWidth = chartWidth / labels.length * 0.8;
+            const barSpacing = chartWidth / labels.length;
+
+            // Draw background
+            ctx.fillStyle = '#f4f4f4';
+            ctx.fillRect(0, 0, width, height);
+
+            // Draw axes
+            ctx.strokeStyle = '#2b2b2b';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(padding, padding);
+            ctx.lineTo(padding, height - padding);
+            ctx.lineTo(width - padding, height - padding);
+            ctx.stroke();
+
+            // Draw grid lines and labels
+            ctx.fillStyle = '#2b2b2b';
+            ctx.font = '12px sans-serif';
+            ctx.textAlign = 'center';
+
+            // Draw bars
+            const maxScore = Math.max(...data);
+            data.forEach((score, index) => {
+                const barHeight = (score / maxScore) * chartHeight;
+                const x = padding + index * barSpacing + (barSpacing - barWidth) / 2;
+                const y = height - padding - barHeight;
+
+                // Draw bar
+                ctx.fillStyle = color;
+                ctx.fillRect(x, y, barWidth, barHeight);
+
+                // Draw label
+                ctx.fillStyle = '#2b2b2b';
+                ctx.save();
+                ctx.translate(x + barWidth / 2, height - padding + 15);
+                ctx.rotate(-Math.PI / 6);
+                ctx.textAlign = 'right';
+                ctx.fillText(labels[index].substring(0, 10), 0, 0);
+                ctx.restore();
+
+                // Draw value
+                ctx.fillStyle = '#2b2b2b';
+                ctx.textAlign = 'center';
+                ctx.fillText(score.toFixed(1), x + barWidth / 2, y - 5);
+            });
+
+            // Draw title
+            ctx.fillStyle = '#2b2b2b';
+            ctx.font = 'bold 14px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(title, width / 2, 25);
+        }
+
+        // =====================================================================
+        // EJ RHAI - CALCULADORA
+        // =====================================================================
+        async function performCalculation() {
+            const calcType = document.getElementById('calcType').value;
+
+            try {
+                const response = await fetch(`${API_BASE}/api/ejrhai/calc`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ type: calcType })
+                });
+                if (!response.ok) throw new Error('Erro no cálculo');
+                const result = await response.json();
+
+                const html = `
+                    <div style="background-color: var(--gray-100); padding: 20px; border-radius: 8px; text-align: center;">
+                        <p style="color: var(--text-secondary); margin-bottom: 10px;">${result.label}</p>
+                        <p style="font-size: 32px; font-weight: 700; color: var(--dark-green);">${result.result}</p>
+                    </div>
+                `;
+                document.getElementById('calcResults').innerHTML = html;
+                showToast('Cálculo realizado com sucesso', 'success');
+            } catch (error) {
+                console.error('Erro:', error);
+                showToast('Erro ao realizar cálculo', 'error');
+            }
+        }
+
+        // =====================================================================
+        // UTILITÁRIOS
+        // =====================================================================
+        function updateHeaderInfo() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            document.getElementById('headerInfo').textContent = timeString;
+        }
+
+        function openGoogleDrive() {
+            window.open(GOOGLE_DRIVE_URL, '_blank');
+            showToast('Abrindo Google Drive...', 'info');
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.animation = 'slideIn 0.3s ease reverse';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Update time every minute
+        setInterval(updateHeaderInfo, 60000);
+    </script>
+</body>
+</html>
